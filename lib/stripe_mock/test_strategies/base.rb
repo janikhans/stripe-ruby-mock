@@ -11,7 +11,8 @@ module StripeMock
           },
           :amount => 1337,
           :currency => currency,
-          :interval => 'month'
+          :interval => 'month',
+          :billing_scheme => 'per_unit'
         }.merge(params)
       end
 
