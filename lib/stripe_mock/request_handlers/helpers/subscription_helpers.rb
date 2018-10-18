@@ -30,17 +30,28 @@ module StripeMock
         start_time = options[:current_period_start] || now
         params = { customer: cus[:id], current_period_start: start_time, created: created_time }
         params.merge!({ :plan => (plans.size == 1 ? plans.first : nil) })
-        params.merge! options.select {|k,v| k =~ /application_fee_percent|quantity|metadata|tax_percent|cancel_at_period_end/}
+        params.merge! options.select {|k,v| k =~ /application_fee_percent|quantity|metadata|tax_percent/}
         # TODO: Implement coupon logic
 
-        if (((plan && plan[:trial_period_days]) || 0) == 0 && options[:trial_end].nil?) || options[:trial_end] == "now"
-          end_time = options[:billing_cycle_anchor] || get_ending_time(start_time, plan)
-          params.merge!({status: 'active', current_period_end: end_time, trial_start: nil, trial_end: nil, billing_cycle_anchor: options[:billing_cycle_anchor]})
+        if options[:current_period_end]
+          end_time = options[:current_period_end]
+          # params.merge!({status: 'active', current_period_end: end_time, trial_start: nil, trial_end: nil, billing_cycle_anchor: nil})
+        # elsif (((plan && plan[:trial_period_days]) || 0) == 0 && options[:trial_end].nil?) || options[:trial_end] == "now"
+        #   end_time = options[:billing_cycle_anchor] || get_ending_time(start_time, plan)
+        #   params.merge!({status: 'active', current_period_end: end_time, trial_start: nil, trial_end: nil, billing_cycle_anchor: options[:billing_cycle_anchor]})
+        # else
+        #   end_time = options[:trial_end] || (Time.now.utc.to_i + plan[:trial_period_days]*86400)
+        #   params.merge!({status: 'trialing', current_period_end: end_time, trial_start: start_time, trial_end: end_time, billing_cycle_anchor: nil})
         else
-          end_time = options[:trial_end] || (Time.now.utc.to_i + plan[:trial_period_days]*86400)
-          params.merge!({status: 'trialing', current_period_end: end_time, trial_start: start_time, trial_end: end_time, billing_cycle_anchor: nil})
+          end_time = (start_time + 1.month).to_i
         end
 
+        if options[:cancel_at_period_end]
+          canceled_at = options[:canceled_at] || now
+          params.merge!(cancel_at_period_end: true, canceled_at: canceled_at)
+        end
+        
+        params.merge!({status: 'active', current_period_end: end_time, trial_start: nil, trial_end: nil, billing_cycle_anchor: nil})
         params
       end
 
